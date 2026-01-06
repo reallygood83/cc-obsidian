@@ -35,8 +35,6 @@ Obsidian 사이드바에서 [Claude Code](https://claude.com/claude-code)를 실
 
 ## 사용 방법
 
-https://github.com/user-attachments/assets/de98439a-8a1f-4a8a-9d02-44027d756462
-
 - 왼쪽 리본 메뉴의 하트 아이콘을 클릭하여 Claude를 엽니다.
 - 명령어 팔레트(`Cmd+P` 또는 `Ctrl+P`)에서 다음 기능을 사용할 수 있습니다:
   - **Open Claude Code** - Claude 패널 열기 또는 포커스
