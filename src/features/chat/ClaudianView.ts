@@ -106,7 +106,7 @@ export class ClaudianView extends ItemView {
   }
 
   getDisplayText(): string {
-    return 'Claudian';
+    return 'CC-Obsidian';
   }
 
   getIcon(): string {
@@ -218,7 +218,7 @@ export class ClaudianView extends ItemView {
     path.setAttribute('fill', LOGO_SVG.fill);
     svg.appendChild(path);
     logoEl.appendChild(svg);
-    titleContainer.createEl('h4', { text: 'Claudian' });
+    titleContainer.createEl('h4', { text: 'CC-Obsidian' });
 
     const headerActions = header.createDiv({ cls: 'claudian-header-actions' });
 
@@ -291,8 +291,8 @@ export class ClaudianView extends ItemView {
         inputContainerEl,
         this.inputEl,
         {
-          onSelect: () => {},
-          onHide: () => {},
+          onSelect: () => { },
+          onHide: () => { },
           getCommands: () => this.plugin.settings.slashCommands,
         }
       );
