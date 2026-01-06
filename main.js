@@ -7146,9 +7146,35 @@ var TerminalView = class extends import_obsidian.ItemView {
     let args = isWindows
       ? [ptyPath, String(cols), String(rows), shell]
       : [ptyPath, String(cols), String(rows), shell, "-lc", "claude || true; exec $SHELL -i"];
+    // Extend PATH to include common Claude Code installation locations
+    // This ensures Claude Code is found regardless of how Obsidian was launched
+    const homedir = os.homedir();
+    const additionalPaths = isWindows ? [
+      // Windows paths
+      path.join(homedir, ".claude", "local", "bin"),  // Claude Code default
+      path.join(homedir, "AppData", "Local", ".claude", "local", "bin"),
+      path.join(homedir, "AppData", "Roaming", "npm"),  // npm global
+      path.join(homedir, ".local", "bin"),
+      "C:\\Program Files\\nodejs",
+      "C:\\Program Files (x86)\\nodejs"
+    ] : [
+      // Unix paths (macOS/Linux)
+      path.join(homedir, ".claude", "local", "bin"),  // Claude Code default
+      path.join(homedir, ".local", "bin"),            // pip user install
+      path.join(homedir, ".npm-global", "bin"),       // npm global
+      "/usr/local/bin",                               // Homebrew (Intel Mac)
+      "/opt/homebrew/bin",                            // Homebrew (Apple Silicon)
+      "/usr/bin",
+      "/bin"
+    ];
+    const existingPaths = additionalPaths.filter(p => fs.existsSync(p));
+    const currentPath = process.env.PATH || "";
+    const extendedPath = [...existingPaths, ...currentPath.split(path.delimiter)]
+      .filter((v, i, a) => a.indexOf(v) === i)  // Remove duplicates
+      .join(path.delimiter);
     this.proc = (0, import_child_process.spawn)(cmd, args, {
       cwd,
-      env: { ...process.env, TERM: "xterm-256color" },
+      env: { ...process.env, PATH: extendedPath, TERM: "xterm-256color" },
       stdio: ["pipe", "pipe", "pipe"]
     });
     // Use StringDecoder to properly handle UTF-8 boundaries across chunks
