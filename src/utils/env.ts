@@ -320,10 +320,15 @@ export function parseEnvironmentVariables(input: string): Record<string, string>
       let value = trimmed.substring(eqIndex + 1).trim();
       // Strip surrounding quotes (single or double)
       if ((value.startsWith('"') && value.endsWith('"')) ||
-          (value.startsWith("'") && value.endsWith("'"))) {
+        (value.startsWith("'") && value.endsWith("'"))) {
         value = value.slice(1, -1);
       }
       if (key) {
+        // Validation: Ignore placeholder values for API key
+        if (key === 'ANTHROPIC_API_KEY' &&
+          (value === 'your_api_key_here' || value === 'your-key' || value.includes('your_api_key'))) {
+          continue;
+        }
         result[key] = value;
       }
     }
