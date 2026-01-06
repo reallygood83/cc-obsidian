@@ -1,9 +1,9 @@
-# Claudian
+# cc-obsidian
 
 ![Preview](Preview.png)
 
 옵시디언(Obsidian)을 사용하면서 "이 내용을 좀 정리해줘" 혹은 "이 파일을 수정해줘"라고 말만 하면 알아서 해주는 비서가 있다면 얼마나 좋을까요?  
-**Claudian**은 바로 그런 역할을 합니다. 옵시디언 사이드바에서 클로드(Claude)와 대화하며, 클로드가 여러분의 노트를 직접 읽고, 쓰고, 명령어도 실행하게 만드는 강력한 플러그인입니다.
+**cc-obsidian**은 바로 그런 역할을 합니다. 옵시디언 사이드바에서 클로드(Claude)와 대화하며, 클로드가 여러분의 노트를 직접 읽고, 쓰고, 명령어도 실행하게 만드는 강력한 플러그인입니다.
 
 단순히 질문에 대답만 하는 챗봇이 아닙니다. 여러분의 '디지털 정원(Vault)'을 관리하는 똑똑한 정원사라고 생각해보세요.
 
@@ -34,11 +34,11 @@
 
 ### 방법 1: 가장 쉬운 방법 (GitHub Release)
 
-1.  [최신 릴리즈 페이지](https://github.com/reallygood83/claudian/releases/latest)에서 `main.js`, `manifest.json`, `styles.css` 이 3가지 파일을 다운로드합니다.
+1.  [최신 릴리즈 페이지](https://github.com/reallygood83/cc-obsidian/releases/latest)에서 `main.js`, `manifest.json`, `styles.css` 이 3가지 파일을 다운로드합니다.
 2.  여러분의 옵시디언 저장소(Vault) 안에 폴더를 하나 만듭니다:  
-    `.obsidian/plugins/claudian/`
+    `.obsidian/plugins/cc-obsidian/`
 3.  다운로드한 3개 파일을 방금 만든 폴더에 넣습니다.
-4.  옵시디언을 켜고 **설정(Settings) → 커뮤니티 플러그인(Community plugins)**에서 "Claudian"을 찾아 켭니다(Enable).
+4.  옵시디언을 켜고 **설정(Settings) → 커뮤니티 플러그인(Community plugins)**에서 "cc-obsidian"을 찾아 켭니다(Enable).
 
 ### 방법 2: 개발자용 설치 (직접 빌드)
 
@@ -47,8 +47,8 @@
 1.  터미널을 열고 플러그인 폴더로 이동합니다.
     ```bash
     cd /path/to/vault/.obsidian/plugins
-    git clone https://github.com/reallygood83/claudian.git
-    cd claudian
+    git clone https://github.com/reallygood83/cc-obsidian.git
+    cd cc-obsidian
     ```
 2.  필요한 도구를 설치하고 빌드합니다.
     ```bash
