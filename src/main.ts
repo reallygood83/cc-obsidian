@@ -60,7 +60,7 @@ export default class ClaudianPlugin extends Plugin {
       (leaf) => new ClaudianView(leaf, this)
     );
 
-    this.addRibbonIcon('bot', 'Open Claudian', () => {
+    this.addRibbonIcon('heart', 'Open cc-obsidian', () => {
       this.activateView();
     });
 
