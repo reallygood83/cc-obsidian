@@ -61,7 +61,7 @@ export default class ObsidianCodePlugin extends Plugin {
       (leaf) => new ObsidianCodeView(leaf, this)
     );
 
-    this.addRibbonIcon('bot', 'Open cc-obsidian', () => {
+    this.addRibbonIcon('bot', 'Open Obsidian Code', () => {
       this.activateView();
     });
 

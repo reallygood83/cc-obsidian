@@ -106,7 +106,7 @@ export class ObsidianCodeView extends ItemView {
   }
 
   getDisplayText(): string {
-    return 'CC-Obsidian';
+    return 'Obsidian Code';
   }
 
   getIcon(): string {
@@ -218,7 +218,7 @@ export class ObsidianCodeView extends ItemView {
     path.setAttribute('fill', LOGO_SVG.fill);
     svg.appendChild(path);
     logoEl.appendChild(svg);
-    titleContainer.createEl('h4', { text: 'CC-Obsidian' });
+    titleContainer.createEl('h4', { text: 'Obsidian Code' });
 
     const headerActions = header.createDiv({ cls: 'oc-header-actions' });
 
