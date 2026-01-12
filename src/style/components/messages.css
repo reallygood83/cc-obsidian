@@ -42,8 +42,8 @@
 }
 
 .oc-message-user {
-  background: rgba(0, 0, 0, 0.3);
-  color: var(--text-on-accent);
+  background: rgba(80, 80, 80, 0.5);
+  color: #ffffff;
   align-self: flex-end;
   border-bottom-right-radius: 4px;
 }
