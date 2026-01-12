@@ -15,6 +15,7 @@ import { EnvSnippetManager, McpSettingsManager, SlashCommandSettings } from '../
 import { getModelsFromEnvironment, parseEnvironmentVariables } from '../../utils/env';
 import { expandHomePath } from '../../utils/path';
 import { buildNavMappingText, parseNavMappings } from './keyboardNavigation';
+import { installObsidianSkills, isObsidianSkillsInstalled, uninstallObsidianSkills } from '../skills/ObsidianSkillsInstaller';
 
 /** Format a hotkey for display (e.g., "Cmd+Shift+E" on Mac, "Ctrl+Shift+E" on Windows). */
 function formatHotkey(hotkey: { modifiers: string[]; key: string }): string {
@@ -232,6 +233,50 @@ export class ObsidianCodeSettingTab extends PluginSettingTab {
         text.inputEl.addEventListener('blur', async () => {
           await commitValue(true);
         });
+      });
+
+    // Obsidian Skills section
+    new Setting(containerEl).setName('Obsidian Skills').setHeading();
+
+    const skillsInstalled = isObsidianSkillsInstalled(this.app);
+    const skillsDesc = containerEl.createDiv({ cls: 'oc-skills-settings-desc' });
+    skillsDesc.createEl('p', {
+      text: 'Install Obsidian-specific skills to help Claude understand Obsidian Flavored Markdown, wikilinks, callouts, properties, and JSON Canvas format.',
+      cls: 'setting-item-description',
+    });
+
+    new Setting(containerEl)
+      .setName('Obsidian Skills')
+      .setDesc(skillsInstalled
+        ? '✅ Installed - Claude now understands Obsidian syntax better.'
+        : 'Not installed - Click to install skills for better Obsidian support.')
+      .addButton((button) => {
+        if (skillsInstalled) {
+          button
+            .setButtonText('Reinstall')
+            .onClick(async () => {
+              await installObsidianSkills(this.app);
+              this.display();
+            });
+        } else {
+          button
+            .setButtonText('Install Skills')
+            .setCta()
+            .onClick(async () => {
+              await installObsidianSkills(this.app);
+              this.display();
+            });
+        }
+      })
+      .addButton((button) => {
+        if (skillsInstalled) {
+          button
+            .setButtonText('Remove')
+            .onClick(async () => {
+              await uninstallObsidianSkills(this.app);
+              this.display();
+            });
+        }
       });
 
     // Hotkeys section
