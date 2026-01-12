@@ -44,6 +44,14 @@ Skills가 설치되면 Claude가 다음을 더 잘 이해합니다:
 - Mermaid 다이어그램
 - 수학 수식 (LaTeX)
 
+### 🌐 GitHub에서 Community Skills 설치
+전 세계 사용자들이 만든 다양한 Claude Code Skills를 설치하여 기능을 확장하세요!
+
+1. **설정 → Obsidian Code → Install Skill from GitHub**
+2. GitHub 저장소 URL 또는 `SKILL.md` 파일 URL 입력
+   - 예: `https://github.com/username/awesome-skill`
+3. **Install** 버튼 클릭
+
 ### 📎 다중 파일 컨텍스트
 - `@`를 입력하여 여러 파일을 한 번에 첨부
 - 첨부된 모든 파일이 **칩 형태**로 표시되어 한눈에 확인

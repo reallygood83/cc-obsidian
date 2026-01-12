@@ -8,7 +8,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 import type { App } from 'obsidian';
-import { Notice } from 'obsidian';
+import { Notice, requestUrl } from 'obsidian';
 
 import { getVaultPath } from '../../utils/path';
 
@@ -307,79 +307,151 @@ Use the \`color\` property with values: \`1\`-\`6\` (preset colors) or hex codes
 
 /** Check if obsidian skills are already installed */
 export function isObsidianSkillsInstalled(app: App): boolean {
-    const vaultPath = getVaultPath(app);
-    if (!vaultPath) return false;
+  const vaultPath = getVaultPath(app);
+  if (!vaultPath) return false;
 
-    const skillsPath = path.join(vaultPath, '.claude', 'skills', 'obsidian-markdown');
-    return fs.existsSync(skillsPath);
+  const skillsPath = path.join(vaultPath, '.claude', 'skills', 'obsidian-markdown');
+  return fs.existsSync(skillsPath);
 }
 
 /** Install obsidian skills to the vault */
 export async function installObsidianSkills(app: App): Promise<boolean> {
-    const vaultPath = getVaultPath(app);
-    if (!vaultPath) {
-        new Notice('Could not determine vault path');
-        return false;
-    }
+  const vaultPath = getVaultPath(app);
+  if (!vaultPath) {
+    new Notice('Could not determine vault path');
+    return false;
+  }
 
-    try {
-        // Create directories
-        const skillsBasePath = path.join(vaultPath, '.claude', 'skills');
-        const obsidianMarkdownPath = path.join(skillsBasePath, 'obsidian-markdown');
-        const jsonCanvasPath = path.join(skillsBasePath, 'json-canvas');
+  try {
+    // Create directories
+    const skillsBasePath = path.join(vaultPath, '.claude', 'skills');
+    const obsidianMarkdownPath = path.join(skillsBasePath, 'obsidian-markdown');
+    const jsonCanvasPath = path.join(skillsBasePath, 'json-canvas');
 
-        // Create skill directories
-        fs.mkdirSync(obsidianMarkdownPath, { recursive: true });
-        fs.mkdirSync(jsonCanvasPath, { recursive: true });
+    // Create skill directories
+    fs.mkdirSync(obsidianMarkdownPath, { recursive: true });
+    fs.mkdirSync(jsonCanvasPath, { recursive: true });
 
-        // Write skill files
-        fs.writeFileSync(
-            path.join(obsidianMarkdownPath, 'SKILL.md'),
-            OBSIDIAN_MARKDOWN_SKILL,
-            'utf-8'
-        );
+    // Write skill files
+    fs.writeFileSync(
+      path.join(obsidianMarkdownPath, 'SKILL.md'),
+      OBSIDIAN_MARKDOWN_SKILL,
+      'utf-8'
+    );
 
-        fs.writeFileSync(
-            path.join(jsonCanvasPath, 'SKILL.md'),
-            JSON_CANVAS_SKILL,
-            'utf-8'
-        );
+    fs.writeFileSync(
+      path.join(jsonCanvasPath, 'SKILL.md'),
+      JSON_CANVAS_SKILL,
+      'utf-8'
+    );
 
-        new Notice('✅ Obsidian Skills installed successfully!');
-        return true;
-    } catch (error) {
-        console.error('Failed to install Obsidian Skills:', error);
-        new Notice(`Failed to install skills: ${error instanceof Error ? error.message : String(error)}`);
-        return false;
-    }
+    new Notice('✅ Obsidian Skills installed successfully!');
+    return true;
+  } catch (error) {
+    console.error('Failed to install Obsidian Skills:', error);
+    new Notice(`Failed to install skills: ${error instanceof Error ? error.message : String(error)}`);
+    return false;
+  }
 }
 
 /** Uninstall obsidian skills from the vault */
 export async function uninstallObsidianSkills(app: App): Promise<boolean> {
-    const vaultPath = getVaultPath(app);
-    if (!vaultPath) {
-        new Notice('Could not determine vault path');
-        return false;
+  const vaultPath = getVaultPath(app);
+  if (!vaultPath) {
+    new Notice('Could not determine vault path');
+    return false;
+  }
+
+  try {
+    const skillsBasePath = path.join(vaultPath, '.claude', 'skills');
+    const obsidianMarkdownPath = path.join(skillsBasePath, 'obsidian-markdown');
+    const jsonCanvasPath = path.join(skillsBasePath, 'json-canvas');
+
+    // Remove skill directories
+    if (fs.existsSync(obsidianMarkdownPath)) {
+      fs.rmSync(obsidianMarkdownPath, { recursive: true });
+    }
+    if (fs.existsSync(jsonCanvasPath)) {
+      fs.rmSync(jsonCanvasPath, { recursive: true });
     }
 
-    try {
-        const skillsBasePath = path.join(vaultPath, '.claude', 'skills');
-        const obsidianMarkdownPath = path.join(skillsBasePath, 'obsidian-markdown');
-        const jsonCanvasPath = path.join(skillsBasePath, 'json-canvas');
+    new Notice('Obsidian Skills removed');
+    return true;
+  } catch (error) {
+    console.error('Failed to uninstall Obsidian Skills:', error);
+    new Notice(`Failed to remove skills: ${error instanceof Error ? error.message : String(error)}`);
+    return false;
+  }
+}
 
-        // Remove skill directories
-        if (fs.existsSync(obsidianMarkdownPath)) {
-            fs.rmSync(obsidianMarkdownPath, { recursive: true });
-        }
-        if (fs.existsSync(jsonCanvasPath)) {
-            fs.rmSync(jsonCanvasPath, { recursive: true });
-        }
+/** Install a skill from a GitHub URL */
+export async function installSkillFromUrl(app: App, url: string): Promise<boolean> {
+  const vaultPath = getVaultPath(app);
+  if (!vaultPath) {
+    new Notice('Could not determine vault path');
+    return false;
+  }
 
-        new Notice('Obsidian Skills removed');
-        return true;
-    } catch (error) {
-        console.error('Failed to uninstall Obsidian Skills:', error);
-        new Notice(`Failed to remove skills: ${error instanceof Error ? error.message : String(error)}`);
-        return false;
+  try {
+    let rawUrl = url;
+
+    // Convert GitHub blob/repo URLs to raw.githubusercontent.com
+    if (url.includes('github.com') && !url.includes('raw.githubusercontent.com')) {
+      // Handle: https://github.com/user/repo/blob/branch/file.md
+      if (url.includes('/blob/')) {
+        rawUrl = url.replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/');
+      } else {
+        // Handle: https://github.com/user/repo -> assume main/SKILL.md
+        // Remove trailing slash if present
+        const cleanUrl = url.replace(/\/$/, '');
+        rawUrl = `${cleanUrl.replace('github.com', 'raw.githubusercontent.com')}/main/SKILL.md`;
+      }
     }
+
+    new Notice(`Downloading skill from ${rawUrl}...`);
+
+    const response = await requestUrl({ url: rawUrl });
+
+    if (response.status !== 200) {
+      throw new Error(`Failed to download skill (Status: ${response.status}). Please check the URL.`);
+    }
+
+    const content = response.text;
+
+    // Extract name from frontmatter
+    const nameMatch = content.match(/^---\s*[\s\S]*?name:\s*([^\r\n]+)/);
+    let skillName = '';
+
+    if (nameMatch && nameMatch[1]) {
+      skillName = nameMatch[1].trim();
+    } else {
+      // Fallback: try to derive from URL
+      const urlParts = url.split('/');
+      skillName = urlParts[urlParts.length - 1].replace(/\.md$/i, '') || 'unknown-skill';
+    }
+
+    // Sanitize name
+    skillName = skillName.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase();
+
+    if (!skillName) {
+      throw new Error('Could not determine skill name. Please ensure the SKILL.md has a "name" field in frontmatter.');
+    }
+
+    const skillsBasePath = path.join(vaultPath, '.claude', 'skills');
+    const skillDir = path.join(skillsBasePath, skillName);
+
+    if (!fs.existsSync(skillDir)) {
+      fs.mkdirSync(skillDir, { recursive: true });
+    }
+
+    fs.writeFileSync(path.join(skillDir, 'SKILL.md'), content, 'utf-8');
+
+    new Notice(`✅ Skill "${skillName}" installed successfully!`);
+    return true;
+
+  } catch (error) {
+    console.error('Failed to install skill from URL:', error);
+    new Notice(`Failed to install skill: ${error instanceof Error ? error.message : String(error)}`);
+    return false;
+  }
 }
