@@ -7,6 +7,7 @@ import { setIcon } from 'obsidian';
 export interface FileChipsViewCallbacks {
   onRemoveAttachment: (path: string) => void;
   onOpenFile: (path: string) => void;
+  onTogglePin: (path: string, shouldPin: boolean) => void;
 }
 
 export class FileChipsView {
@@ -102,50 +103,60 @@ export class FileChipsView {
     for (const filePath of pathsToShow) {
       const isCurrentNote = filePath === this.currentNotePath;
       const isPinned = this.pinnedPaths.has(filePath);
-      this.renderFileChip(filePath, isCurrentNote, isPinned, () => {
-        this.callbacks.onRemoveAttachment(filePath);
-      });
+      this.renderFileChip(filePath, isCurrentNote, isPinned);
     }
   }
 
-  private renderFileChip(filePath: string, isCurrentNote: boolean, isPinned: boolean, onRemove: () => void): void {
+  private renderFileChip(filePath: string, isCurrentNote: boolean, isPinned: boolean): void {
     const chipEl = this.fileIndicatorEl.createDiv({ cls: 'oc-file-chip' });
 
-    // Add visual distinction for current note vs attached files
-    if (isCurrentNote && !isPinned) {
-      chipEl.addClass('oc-file-chip-current');
-    } else if (isPinned) {
+    // Add visual distinction for pinned vs unpinned
+    if (isPinned) {
       chipEl.addClass('oc-file-chip-pinned');
+    } else if (isCurrentNote) {
+      chipEl.addClass('oc-file-chip-current');
     } else {
       chipEl.addClass('oc-file-chip-attached');
     }
 
+    // File icon
     const iconEl = chipEl.createSpan({ cls: 'oc-file-chip-icon' });
-    // Use pin icon for pinned files, file icon for others
-    if (isPinned) {
-      setIcon(iconEl, 'pin');
-    } else {
-      setIcon(iconEl, 'file-text');
-    }
+    setIcon(iconEl, 'file-text');
 
+    // File name
     const normalizedPath = filePath.replace(/\\/g, '/');
     const filename = normalizedPath.split('/').pop() || filePath;
     const nameEl = chipEl.createSpan({ cls: 'oc-file-chip-name' });
     nameEl.setText(filename);
-    nameEl.setAttribute('title', isPinned ? `📌 ${filePath} (pinned)` : filePath);
+    nameEl.setAttribute('title', filePath);
 
-    const removeEl = chipEl.createSpan({ cls: 'oc-file-chip-remove' });
-    removeEl.setText('\u00D7');
-    removeEl.setAttribute('aria-label', 'Remove');
-
+    // Click on chip body to open file
     chipEl.addEventListener('click', (e) => {
-      if (!(e.target as HTMLElement).closest('.oc-file-chip-remove')) {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.oc-file-chip-pin') && !target.closest('.oc-file-chip-remove')) {
         this.callbacks.onOpenFile(filePath);
       }
     });
 
-    removeEl.addEventListener('click', () => {
-      onRemove();
+    // Pin button
+    const pinEl = chipEl.createSpan({ cls: 'oc-file-chip-pin' });
+    setIcon(pinEl, isPinned ? 'pin-off' : 'pin');
+    pinEl.setAttribute('aria-label', isPinned ? 'Unpin (allow auto-change)' : 'Pin (keep attached)');
+    pinEl.setAttribute('title', isPinned ? '📌 Pinned - Click to unpin' : 'Click to pin this note');
+
+    pinEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.callbacks.onTogglePin(filePath, !isPinned);
+    });
+
+    // Remove button
+    const removeEl = chipEl.createSpan({ cls: 'oc-file-chip-remove' });
+    removeEl.setText('\u00D7');
+    removeEl.setAttribute('aria-label', 'Remove');
+
+    removeEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.callbacks.onRemoveAttachment(filePath);
     });
   }
 }

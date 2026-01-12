@@ -86,6 +86,11 @@ export class FileContextState {
     return this.pinnedFiles.has(path);
   }
 
+  /** Unpin a file (keeps it attached but allows auto-replacement). */
+  unpinFile(path: string): void {
+    this.pinnedFiles.delete(path);
+  }
+
   /** Attach a context file with display name to absolute path mapping. */
   attachContextFile(displayName: string, absolutePath: string): void {
     this.attachedFiles.add(absolutePath);

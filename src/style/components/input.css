@@ -124,6 +124,34 @@
   color: var(--text-normal);
 }
 
+/* Pin button on file chip */
+.oc-file-chip-pin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.oc-file-chip-pin svg {
+  width: 12px;
+  height: 12px;
+}
+
+.oc-file-chip-pin:hover {
+  background: var(--background-modifier-hover);
+  color: var(--interactive-accent);
+}
+
+/* Pinned state - show as active */
+.oc-file-chip-pinned .oc-file-chip-pin {
+  color: var(--interactive-accent);
+}
+
 .oc-file-chip:hover {
   background: var(--background-modifier-hover);
 }

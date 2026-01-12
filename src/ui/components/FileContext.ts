@@ -77,6 +77,17 @@ export class FileContextManager {
           new Notice(`Failed to open file: ${error instanceof Error ? error.message : String(error)}`);
         }
       },
+      onTogglePin: (filePath, shouldPin) => {
+        if (shouldPin) {
+          this.state.pinFile(filePath);
+          new Notice(`📌 Pinned: ${filePath.split('/').pop()}`);
+        } else {
+          // Unpin but keep attached
+          this.state.unpinFile(filePath);
+          new Notice(`Unpinned: ${filePath.split('/').pop()}`);
+        }
+        this.refreshAllChips();
+      },
     });
 
     this.mentionDropdown = new MentionDropdownController(
