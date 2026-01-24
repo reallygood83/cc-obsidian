@@ -1,8 +1,10 @@
 /**
  * SlashCommandStorage - Handles slash command files in vault/.claude/commands/
+ * and global ~/.claude/commands/
  *
  * Each command is stored as a Markdown file with YAML frontmatter.
  * Supports nested folders for organization.
+ * Vault commands take precedence over global commands with the same name.
  *
  * File format:
  * ```markdown
@@ -18,6 +20,10 @@
  * ```
  */
 
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
+
 import { parseSlashCommandContent } from '../../utils/slashCommand';
 import type { ClaudeModel, SlashCommand } from '../types';
 import type { VaultFileAdapter } from './VaultFileAdapter';
@@ -25,13 +31,22 @@ import type { VaultFileAdapter } from './VaultFileAdapter';
 /** Path to commands folder relative to vault root. */
 export const COMMANDS_PATH = '.claude/commands';
 
+/** Path to global commands folder. */
+export const GLOBAL_COMMANDS_PATH = path.join(os.homedir(), '.claude', 'commands');
+
 export class SlashCommandStorage {
   constructor(private adapter: VaultFileAdapter) {}
 
-  /** Load all commands from .claude/commands/ recursively. */
+  /**
+   * Load all commands from both global (~/.claude/commands/) and vault (.claude/commands/).
+   * Vault commands take precedence over global commands with the same name.
+   */
   async loadAll(): Promise<SlashCommand[]> {
-    const commands: SlashCommand[] = [];
+    // Load global commands first
+    const globalCommands = this.loadAllFromGlobal();
 
+    // Load vault commands
+    const vaultCommands: SlashCommand[] = [];
     try {
       const files = await this.adapter.listFilesRecursive(COMMANDS_PATH);
 
@@ -41,17 +56,102 @@ export class SlashCommandStorage {
         try {
           const command = await this.loadFromFile(filePath);
           if (command) {
-            commands.push(command);
+            vaultCommands.push(command);
           }
         } catch (error) {
           console.error(`[ObsidianCode] Failed to load command from ${filePath}:`, error);
         }
       }
     } catch (error) {
-      console.error('[ObsidianCode] Failed to list command files:', error);
+      console.error('[ObsidianCode] Failed to list vault command files:', error);
+    }
+
+    // Merge: vault commands override global commands with the same name
+    const vaultNames = new Set(vaultCommands.map(c => c.name));
+    const mergedCommands = [
+      ...globalCommands.filter(c => !vaultNames.has(c.name)),
+      ...vaultCommands,
+    ];
+
+    return mergedCommands;
+  }
+
+  /**
+   * Load commands from global ~/.claude/commands/ directory.
+   * Uses Node.js fs module since this is outside the vault.
+   */
+  private loadAllFromGlobal(): SlashCommand[] {
+    const commands: SlashCommand[] = [];
+
+    if (!fs.existsSync(GLOBAL_COMMANDS_PATH)) {
+      return commands;
+    }
+
+    try {
+      const files = this.listFilesRecursiveSync(GLOBAL_COMMANDS_PATH);
+
+      for (const filePath of files) {
+        if (!filePath.endsWith('.md')) continue;
+
+        try {
+          const content = fs.readFileSync(filePath, 'utf-8');
+          const relativePath = path.relative(GLOBAL_COMMANDS_PATH, filePath);
+          const command = this.parseFileFromGlobal(content, relativePath);
+          if (command) {
+            commands.push(command);
+          }
+        } catch (error) {
+          console.error(`[ObsidianCode] Failed to load global command from ${filePath}:`, error);
+        }
+      }
+    } catch (error) {
+      console.error('[ObsidianCode] Failed to list global command files:', error);
     }
 
     return commands;
+  }
+
+  /**
+   * Recursively list all files in a directory (sync version for global path).
+   */
+  private listFilesRecursiveSync(dir: string): string[] {
+    const files: string[] = [];
+
+    const processDir = (currentDir: string) => {
+      if (!fs.existsSync(currentDir)) return;
+
+      const entries = fs.readdirSync(currentDir, { withFileTypes: true });
+      for (const entry of entries) {
+        const fullPath = path.join(currentDir, entry.name);
+        if (entry.isDirectory()) {
+          processDir(fullPath);
+        } else if (entry.isFile()) {
+          files.push(fullPath);
+        }
+      }
+    };
+
+    processDir(dir);
+    return files;
+  }
+
+  /**
+   * Parse a command file from global path into a SlashCommand object.
+   */
+  private parseFileFromGlobal(content: string, relativePath: string): SlashCommand {
+    const parsed = parseSlashCommandContent(content);
+    const name = relativePath.replace(/\.md$/, '');
+    const id = `global-cmd-${name.replace(/-/g, '-_').replace(/\//g, '--')}`;
+
+    return {
+      id,
+      name,
+      description: parsed.description,
+      argumentHint: parsed.argumentHint,
+      allowedTools: parsed.allowedTools,
+      model: parsed.model as ClaudeModel | undefined,
+      content: parsed.promptContent,
+    };
   }
 
   /** Load a single command from a file path. */

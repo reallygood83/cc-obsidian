@@ -1,16 +1,21 @@
 /**
  * Obsidian Skills Installer
- * 
+ *
  * Installs pre-bundled Obsidian skills to the vault's .claude/skills folder.
+ * Also loads global skills from ~/.claude/skills/.
  */
 
 import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
 
 import type { App } from 'obsidian';
 import { Notice, requestUrl } from 'obsidian';
 
 import { getVaultPath } from '../../utils/path';
+
+/** Path to global skills folder. */
+const GLOBAL_SKILLS_PATH = path.join(os.homedir(), '.claude', 'skills');
 
 /** Bundled skill files to install */
 const OBSIDIAN_MARKDOWN_SKILL = `---
@@ -311,6 +316,7 @@ export interface InstalledSkill {
   description: string;
   path: string;
   isBuiltIn: boolean;  // true for obsidian-markdown and json-canvas
+  isGlobal: boolean;   // true for skills from ~/.claude/skills/
 }
 
 /** Built-in skill names (bundled with the plugin) */
@@ -325,15 +331,49 @@ export function isObsidianSkillsInstalled(app: App): boolean {
   return fs.existsSync(skillsPath);
 }
 
-/** Get all installed skills in the vault */
+/**
+ * Get all installed skills from both global (~/.claude/skills/) and vault (.claude/skills/).
+ * Vault skills take precedence over global skills with the same name.
+ */
 export function getInstalledSkills(app: App): InstalledSkill[] {
   const vaultPath = getVaultPath(app);
-  if (!vaultPath) return [];
 
-  const skillsBasePath = path.join(vaultPath, '.claude', 'skills');
-  if (!fs.existsSync(skillsBasePath)) return [];
+  // Load global skills first
+  const globalSkills = loadSkillsFromPath(GLOBAL_SKILLS_PATH, true);
 
+  // Load vault skills
+  const vaultSkills: InstalledSkill[] = [];
+  if (vaultPath) {
+    const vaultSkillsPath = path.join(vaultPath, '.claude', 'skills');
+    vaultSkills.push(...loadSkillsFromPath(vaultSkillsPath, false));
+  }
+
+  // Merge: vault skills override global skills with the same name
+  const vaultNames = new Set(vaultSkills.map(s => s.name));
+  const mergedSkills = [
+    ...globalSkills.filter(s => !vaultNames.has(s.name)),
+    ...vaultSkills,
+  ];
+
+  // Sort: built-in skills first, then global skills, then alphabetically
+  return mergedSkills.sort((a, b) => {
+    if (a.isBuiltIn && !b.isBuiltIn) return -1;
+    if (!a.isBuiltIn && b.isBuiltIn) return 1;
+    if (a.isGlobal && !b.isGlobal) return -1;
+    if (!a.isGlobal && b.isGlobal) return 1;
+    return a.name.localeCompare(b.name);
+  });
+}
+
+/**
+ * Load skills from a specific directory path.
+ */
+function loadSkillsFromPath(skillsBasePath: string, isGlobal: boolean): InstalledSkill[] {
   const skills: InstalledSkill[] = [];
+
+  if (!fs.existsSync(skillsBasePath)) {
+    return skills;
+  }
 
   try {
     const entries = fs.readdirSync(skillsBasePath, { withFileTypes: true });
@@ -363,18 +403,14 @@ export function getInstalledSkills(app: App): InstalledSkill[] {
         description: description || 'No description available',
         path: skillDir,
         isBuiltIn: BUILT_IN_SKILLS.includes(entry.name),
+        isGlobal,
       });
     }
   } catch {
     // Ignore directory read errors
   }
 
-  // Sort: built-in skills first, then alphabetically
-  return skills.sort((a, b) => {
-    if (a.isBuiltIn && !b.isBuiltIn) return -1;
-    if (!a.isBuiltIn && b.isBuiltIn) return 1;
-    return a.name.localeCompare(b.name);
-  });
+  return skills;
 }
 
 /** Remove a specific skill by name */
